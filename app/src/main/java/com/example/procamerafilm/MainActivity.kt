@@ -1,15 +1,12 @@
 package com.example.procamerafilm
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -19,7 +16,6 @@ import androidx.camera.video.*
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -157,13 +153,13 @@ class MainActivity : AppCompatActivity() {
                         isRecording = true
                         recordingStartTime = System.currentTimeMillis()
                         recordButton.text = "◼ Dur"
-                        recordButton.setBackgroundColor(Color.RED)
+                        recordButton.setBackgroundColor(android.graphics.Color.RED)
                         startTimerUpdate()
                     }
                     is VideoRecordEvent.Finalize -> {
                         isRecording = false
                         recordButton.text = "● Kayıt"
-                        recordButton.setBackgroundColor(Color.parseColor("#4CAF50"))
+                        recordButton.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
                         timerText.text = "00:00"
                     }
                 }
@@ -178,11 +174,11 @@ class MainActivity : AppCompatActivity() {
     private fun toggleFilmMode() {
         isFilmMode = !isFilmMode
         if (isFilmMode) {
-            filmModeButton.setBackgroundColor(Color.parseColor("#FF6F00"))
+            filmModeButton.setBackgroundColor(android.graphics.Color.parseColor("#FF6F00"))
             filmModeButton.text = "🎬 Film Mode: ON"
             Toast.makeText(this, "Film Mode Aktif - Sahne Takibi Başladı", Toast.LENGTH_SHORT).show()
         } else {
-            filmModeButton.setBackgroundColor(Color.parseColor("#666666"))
+            filmModeButton.setBackgroundColor(android.graphics.Color.parseColor("#666666"))
             filmModeButton.text = "🎬 Film Mode"
             Toast.makeText(this, "Film Mode Kapalı", Toast.LENGTH_SHORT).show()
         }
@@ -224,5 +220,3 @@ class MainActivity : AppCompatActivity() {
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
     }
 }
-
-import android.content.ContentValues
