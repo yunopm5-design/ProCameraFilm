@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pro Kamera Film</string>
+    <string name="capture">Fotoğraf</string>
+    <string name="record">Kayıt</string>
+    <string name="film_mode">Film Mode</string>
+    <string name="settings">Ayarlar</string>
+</resources>
