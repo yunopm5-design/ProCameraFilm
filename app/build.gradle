@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace 'com.example.procamerafilm'
     compileSdk 34
     
     defaultConfig {
