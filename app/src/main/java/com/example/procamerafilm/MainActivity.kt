@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -29,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var filmModeButton: Button
     private lateinit var settingsButton: Button
     private lateinit var timerText: TextView
-    private lateinit var cameraProvider: ProcessCameraProvider
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
     private var isRecording = false
@@ -38,11 +39,12 @@ class MainActivity : AppCompatActivity() {
     
     private val cameraExecutor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
     private val PERMISSION_REQUEST_CODE = 100
+    private val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        
         initViews()
         requestPermissions()
     }
@@ -58,9 +60,7 @@ class MainActivity : AppCompatActivity() {
         captureButton.setOnClickListener { takePicture() }
         recordButton.setOnClickListener { toggleRecording() }
         filmModeButton.setOnClickListener { toggleFilmMode() }
-        settingsButton.setOnClickListener { 
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
+        settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
     }
 
     private fun requestPermissions() {
@@ -74,14 +74,8 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
-        if (permissionsToRequest.isNotEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    permissionsToRequest.toTypedArray(),
-                    PERMISSION_REQUEST_CODE
-                )
-            }
+        if (permissionsToRequest.isNotEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), PERMISSION_REQUEST_CODE)
         } else {
             startCamera()
         }
@@ -91,8 +85,7 @@ class MainActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
-
+            val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
@@ -102,45 +95,35 @@ class MainActivity : AppCompatActivity() {
                 .build()
 
             videoCapture = VideoCapture.withOutput(recorder)
-
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, videoCapture
-                )
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, videoCapture)
             } catch (exc: Exception) {
                 Toast.makeText(this, "Kamera başlatılamadı", Toast.LENGTH_SHORT).show()
             }
-
         }, ContextCompat.getMainExecutor(this))
     }
 
     private fun takePicture() {
-        Toast.makeText(this, "Fotoğraf çekildi", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "📷 Fotoğraf çekildi", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleRecording() {
-        if (!isRecording) {
-            startRecording()
-        } else {
-            stopRecording()
-        }
+        if (!isRecording) startRecording() else stopRecording()
     }
 
     private fun startRecording() {
         val videoCapture = videoCapture ?: return
-
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
+        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
         val contentValues = ContentValues().apply {
-            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
         }
 
         val outputOptions = FileOutputOptions.Builder(
             contentResolver,
-            android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
             contentValues
         ).build()
 
@@ -153,15 +136,16 @@ class MainActivity : AppCompatActivity() {
                         isRecording = true
                         recordingStartTime = System.currentTimeMillis()
                         recordButton.text = "◼ Dur"
-                        recordButton.setBackgroundColor(android.graphics.Color.RED)
+                        recordButton.setBackgroundColor(Color.RED)
                         startTimerUpdate()
                     }
                     is VideoRecordEvent.Finalize -> {
                         isRecording = false
                         recordButton.text = "● Kayıt"
-                        recordButton.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+                        recordButton.setBackgroundColor(Color.parseColor("#4CAF50"))
                         timerText.text = "00:00"
                     }
+                    else -> {}
                 }
             }
     }
@@ -174,13 +158,12 @@ class MainActivity : AppCompatActivity() {
     private fun toggleFilmMode() {
         isFilmMode = !isFilmMode
         if (isFilmMode) {
-            filmModeButton.setBackgroundColor(android.graphics.Color.parseColor("#FF6F00"))
+            filmModeButton.setBackgroundColor(Color.parseColor("#FF6F00"))
             filmModeButton.text = "🎬 Film Mode: ON"
-            Toast.makeText(this, "Film Mode Aktif - Sahne Takibi Başladı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Film Mode Aktif", Toast.LENGTH_SHORT).show()
         } else {
-            filmModeButton.setBackgroundColor(android.graphics.Color.parseColor("#666666"))
+            filmModeButton.setBackgroundColor(Color.parseColor("#666666"))
             filmModeButton.text = "🎬 Film Mode"
-            Toast.makeText(this, "Film Mode Kapalı", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -204,19 +187,13 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startCamera()
-            }
+        if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-    }
-
-    companion object {
-        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
     }
 }
